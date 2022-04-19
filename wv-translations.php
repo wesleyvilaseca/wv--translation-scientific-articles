@@ -1,19 +1,19 @@
 <?php
 
 /**
-* Plugin Name: WV Translations
-* Plugin URI: https://www.wordpress.org/wv-translations
-* Description: My plugin's description
-* Version: 1.0
-* Requires at least: 5.9
-* Requires PHP: 7.4
-* Author: Marcelo Vieira
-* Author URI: https://www.codevila.com.br
-* License: GPL v2 or later
-* License URI: https://www.gnu.org/licenses/gpl-2.0.html
-* Text Domain: Wv-translations
-* Domain Path: /languages
-*/
+ * Plugin Name: WV Translations
+ * Plugin URI: https://www.wordpress.org/wv-translations
+ * Description: My plugin's description
+ * Version: 1.0
+ * Requires at least: 5.9
+ * Requires PHP: 7.4
+ * Author: Wesley Vila Seca
+ * Author URI: https://www.codevila.com.br
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: wv-translations
+ * Domain Path: /languages
+ */
 /*
 WV Translations is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,60 +29,114 @@ You should have received a copy of the GNU General Public License
 along with WV Translations. If not, see https://www.gnu.org/licenses/gpl-2.0.html.
 */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit; // Exit if accessed directly
 }
 
-if( !class_exists( 'WV_Translations' )){
+if (!class_exists('WV_Translations')) {
 
-	class WV_Translations{
+    class WV_Translations
+    {
 
-		public function __construct(){
+        public function __construct()
+        {
 
-			$this->define_constants(); 
-            			
-		}
+            $this->define_constants();
+        }
 
-		public function define_constants(){
+        public function define_constants()
+        {
             // Path/URL to root of this plugin, with trailing slash.
-			define ( 'WV_TRANSLATIONS_PATH', plugin_dir_path( __FILE__ ) );
-            define ( 'WV_TRANSLATIONS_URL', plugin_dir_url( __FILE__ ) );
-            define ( 'WV_TRANSLATIONS_VERSION', '1.0.0' );
-		}
+            define('WV_TRANSLATIONS_PATH', plugin_dir_path(__FILE__));
+            define('WV_TRANSLATIONS_URL', plugin_dir_url(__FILE__));
+            define('WV_TRANSLATIONS_VERSION', '1.0.0');
+        }
 
         /**
          * Activate the plugin
          */
-        public static function activate(){
-            update_option('rewrite_rules', '' );
+        public static function activate()
+        {
+            update_option('rewrite_rules', '');
 
+            global $wpdb;
+            $table_name = $wpdb->prefix . "translationmeta";
+            $mvt_db_version = get_option('wv_translation_db_version');
+
+            if (empty($mvt_db_version)) {
+
+                global $wpdb;
+                $createSql = "
+                CREATE TABLE `" . $table_name . "` (
+                    `meta_id` BIGINT(20) unsigned NOT NULL AUTO_INCREMENT,
+                    `translation_id` BIGINT(20) NOT NULL DEFAULT '0',
+                    `meta_key` VARCHAR(255) DEFAULT NULL,
+                    `meta_value` LONGTEXT,
+                    PRIMARY KEY (`meta_id`),
+                    KEY `translation_id` (`translation_id`),
+                    KEY `meta_key` (`meta_key`)
+                )ENGINE=InnoDB " . $wpdb->get_charset_collate() . ";";
+
+                require_once(ABSPATH . "/wp-admin/includes/upgrade.php");
+
+                dbDelta($createSql, true);
+
+                $mvt_db_version = "1.0";
+
+                add_option('wv_translation_db_version', $mvt_db_version);
+            }
+
+            if ($wpdb->get_row("SELECT post_name FROM {$wpdb->prefix}posts WHERE post_name = 'submit-translation'") == null) {
+                $page = [
+                    'post_title' => __('Submit Translation', 'wv-translations'),
+                    'post_name' => 'submit-translation',
+                    'post_status' => 'publish',
+                    'post_author' => wp_get_current_user()->ID,
+                    'post_type' => 'page',
+                    'post_content' => '<!-- wp:shortcode -->[wv_translations]<!-- /wp:shortcode -->'
+                ];
+                wp_insert_post($page);
+            }
+
+            if ($wpdb->get_row("SELECT post_name FROM {$wpdb->prefix}posts WHERE post_name = 'edit-translation'") == null) {
+                $page = [
+                    'post_title' => __('Edit Translation', 'wv-translations'),
+                    'post_name' => 'edit-translation',
+                    'post_status' => 'publish',
+                    'post_author' => wp_get_current_user()->ID,
+                    'post_type' => 'page',
+                    'post_content' => '<!-- wp:shortcode -->[wv_translations_edit]<!-- /wp:shortcode -->'
+                ];
+                wp_insert_post($page);
+            }
         }
 
         /**
          * Deactivate the plugin
          */
-        public static function deactivate(){
+        public static function deactivate()
+        {
             flush_rewrite_rules();
-        }        
+        }
 
         /**
          * Uninstall the plugin
          */
-        public static function uninstall(){
-
-        }       
-
-	}
+        public static function uninstall()
+        {
+            delete_option('wv-translations');
+        }
+    }
 }
 
 // Plugin Instantiation
-if (class_exists( 'WV_Translations' )){
+if (class_exists('WV_Translations')) {
 
     // Installation and uninstallation hooks
-    register_activation_hook( __FILE__, array( 'WV_Translations', 'activate'));
-    register_deactivation_hook( __FILE__, array( 'WV_Translations', 'deactivate'));
-    register_uninstall_hook( __FILE__, array( 'WV_Translations', 'uninstall' ) );
+    register_activation_hook(__FILE__, array('WV_Translations', 'activate'));
+    register_deactivation_hook(__FILE__, array('WV_Translations', 'deactivate'));
+    register_uninstall_hook(__FILE__, array('WV_Translations', 'uninstall'));
 
     // Instatiate the plugin class
-    $Wv_translations = new WV_Translations(); 
+    $Wv_translations = new WV_Translations();
 }
