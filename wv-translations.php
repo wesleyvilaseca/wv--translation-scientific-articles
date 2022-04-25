@@ -40,8 +40,13 @@ if (!class_exists('WV_Translations')) {
 
         public function __construct()
         {
-
             $this->define_constants();
+
+            require_once(WV_TRANSLATIONS_PATH . 'post-types/class.' . PLUGIN_KEY . '-cpt.php');
+            require_once(WV_TRANSLATIONS_PATH . 'shortcodes/class.' . PLUGIN_KEY . '-shortcode.php');
+
+            $WVTranslatiosPostTypes = new WV_Translations_Post_Type;
+            $WVTranslationsShortCode = new WV_Translations_Shortcode;
         }
 
         public function define_constants()
@@ -49,6 +54,7 @@ if (!class_exists('WV_Translations')) {
             // Path/URL to root of this plugin, with trailing slash.
             define('WV_TRANSLATIONS_PATH', plugin_dir_path(__FILE__));
             define('WV_TRANSLATIONS_URL', plugin_dir_url(__FILE__));
+            define('PLUGIN_KEY', 'wv-translations');
             define('WV_TRANSLATIONS_VERSION', '1.0.0');
         }
 
@@ -88,7 +94,7 @@ if (!class_exists('WV_Translations')) {
 
             if ($wpdb->get_row("SELECT post_name FROM {$wpdb->prefix}posts WHERE post_name = 'submit-translation'") == null) {
                 $page = [
-                    'post_title' => __('Submit Translation', 'wv-translations'),
+                    'post_title' => __('Submit Translation', PLUGIN_KEY),
                     'post_name' => 'submit-translation',
                     'post_status' => 'publish',
                     'post_author' => wp_get_current_user()->ID,
@@ -100,7 +106,7 @@ if (!class_exists('WV_Translations')) {
 
             if ($wpdb->get_row("SELECT post_name FROM {$wpdb->prefix}posts WHERE post_name = 'edit-translation'") == null) {
                 $page = [
-                    'post_title' => __('Edit Translation', 'wv-translations'),
+                    'post_title' => __('Edit Translation', PLUGIN_KEY),
                     'post_name' => 'edit-translation',
                     'post_status' => 'publish',
                     'post_author' => wp_get_current_user()->ID,
@@ -117,6 +123,7 @@ if (!class_exists('WV_Translations')) {
         public static function deactivate()
         {
             flush_rewrite_rules();
+            unregister_post_type(PLUGIN_KEY);
         }
 
         /**
@@ -124,7 +131,7 @@ if (!class_exists('WV_Translations')) {
          */
         public static function uninstall()
         {
-            delete_option('wv-translations');
+            delete_option(PLUGIN_KEY);
         }
     }
 }
