@@ -136,7 +136,25 @@ if (!class_exists('WV_Translations')) {
          */
         public static function uninstall()
         {
-            // delete_option(PLUGIN_KEY);
+            delete_option( 'wv_translation_db_version' );
+
+            global $wpdb;
+
+            $wpdb->query(
+                "DELETE FROM $wpdb->posts
+                WHERE post_type = 'wv-translations'" 
+            );
+
+            $wpdb->query(
+                "DELETE FROM $wpdb->posts
+                WHERE post_type = 'page'
+                AND post_name IN( 'submit-translation', 'edit-translation' )"
+            );
+
+            $wpdb->query( $wpdb->prepare(
+                "DROP TABLE IF EXISTS %s",
+                $wpdb->prefix . 'translationmeta'
+            ));            
         }
 
         public function load_single_template($tpl)
