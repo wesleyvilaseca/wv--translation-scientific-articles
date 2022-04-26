@@ -44,9 +44,14 @@ if (!class_exists('WV_Translations')) {
 
             require_once(WV_TRANSLATIONS_PATH . 'post-types/class.' . PLUGIN_KEY . '-cpt.php');
             require_once(WV_TRANSLATIONS_PATH . 'shortcodes/class.' . PLUGIN_KEY . '-shortcode.php');
+            require_once(WV_TRANSLATIONS_PATH . 'shortcodes/class.' . PLUGIN_KEY . '-edit-shortcode.php');
+            require_once(WV_TRANSLATIONS_PATH . 'functions/functions.php');
 
             $WVTranslatiosPostTypes = new WV_Translations_Post_Type;
             $WVTranslationsShortCode = new WV_Translations_Shortcode;
+            $WVTranslationsEditShortCode = new WV_Translations_EditShortcode;
+
+            add_filter('single_template', [$this, 'load_single_template']);
         }
 
         public function define_constants()
@@ -131,7 +136,15 @@ if (!class_exists('WV_Translations')) {
          */
         public static function uninstall()
         {
-            delete_option(PLUGIN_KEY);
+            // delete_option(PLUGIN_KEY);
+        }
+
+        public function load_single_template($tpl)
+        {
+            if( is_singular( 'wv-translations' ) ){
+                $tpl = WV_TRANSLATIONS_PATH . 'views/templates/single-wv-translations.php';
+            }
+            return $tpl;
         }
     }
 }

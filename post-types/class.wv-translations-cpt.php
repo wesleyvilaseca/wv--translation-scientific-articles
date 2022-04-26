@@ -49,11 +49,11 @@ if (!class_exists('WV_Translations_Post_Type')) {
         {
             register_taxonomy(
                 'singers',
-                'wv-translations',
+                PLUGIN_KEY,
                 [
                     'labels' => [
-                        'name' => __('Singers', 'wv-translations'),
-                        'singular_name' => __('Singer', 'wv-translations')
+                        'name' => __('Singers', PLUGIN_KEY),
+                        'singular_name' => __('Singer', PLUGIN_KEY)
                     ],
                     'hierarchical' => false,
                     'show_in_rest' => true,
@@ -88,86 +88,87 @@ if (!class_exists('WV_Translations_Post_Type')) {
 
         public static function save_post($post_id, $post)
         {
-            if (isset($_POST['wv_translations_nonce']))
-                if (!wp_verify_nonce($_POST['wv_translations_nonce'], 'wv_translations_nonce')) return;
 
-            if (defined('DOING_AUTOSAVE') and DOING_AUTOSAVE) return;
-
-
-            if (!isset($_POST['post_type']) and $_POST['post_type'] !== PLUGIN_KEY) return;
-
-            if (!current_user_can('edit_page', $post_id)) return;
-
-            if (!current_user_can('edit_post', $post_id)) return;
-
-            if (!isset($_POST['action']) and $_POST['action'] !== 'editpost') return;
-
-
-            $transliteration = sanitize_text_field($_POST['wv_translations_transliteration']);
-            $video = esc_url_raw($_POST['wv_translations_video_url']);
-
-            global $wpdb;
-
-            if ($_POST['wv_translations_action'] == 'save') {
-                if (
-                    get_post_type($post) == PLUGIN_KEY and
-                    $post->post_status != 'trash' and
-                    $post->post_status != 'auto-draft' and
-                    $post->post_status != 'draft' and
-                    $wpdb->get_var($wpdb->prepare("SELECT translation_id FROM $wpdb->translationmeta WHERE translation_id = %d", $post_id)) == null
-                ) {
-                    $wpdb->insert(
-                        $wpdb->translationmeta,
-                        [
-                            'translation_id'    => $post_id,
-                            'meta_key'  => 'wv_translations_transliteration',
-                            'meta_value'    => $transliteration
-                        ],
-                        [
-                            '%d', '%s', '%s'
-                        ]
-                    );
-                    $wpdb->insert(
-                        $wpdb->translationmeta,
-                        [
-                            'translation_id'    => $post_id,
-                            'meta_key'  => 'wv_translations_video_url',
-                            'meta_value'    => $video
-                        ],
-                        [
-                            '%d', '%s', '%s'
-                        ]
-                    );
+            if (isset($_POST['wv_translations_nonce'])) {
+                if (!wp_verify_nonce($_POST['wv_translations_nonce'], 'wv_translations_nonce')) {
+                    return;
                 }
             }
 
-            if ($_POST['wv_translations_action'] == 'update') {
-                if (get_post_type($post) == PLUGIN_KEY) {
-                    $wpdb->update(
-                        $wpdb->translationmeta,
-                        [
-                            'meta_value' => $transliteration
-                        ],
-                        [
-                            'translation_id' => $post_id,
-                            'meta_key'  => 'wv_translations_transliteration',
-                        ],
-                        ['%s'],
-                        ['%d', '%s']
-                    );
+            if (defined('DOING_AUTOSAVE') and DOING_AUTOSAVE) return;
 
-                    $wpdb->update(
-                        $wpdb->translationmeta,
-                        [
-                            'meta_value' => $video
-                        ],
-                        [
-                            'translation_id' => $post_id,
-                            'meta_key'  => 'wv_translations_video_url',
-                        ],
-                        ['%s'],
-                        ['%d', '%s']
-                    );
+            if (isset($_POST['post_type']) && $_POST['post_type'] === PLUGIN_KEY) {
+                if (!current_user_can('edit_page', $post_id)) {
+                    return;
+                } elseif (!current_user_can('edit_post', $post_id)) {
+                    return;
+                }
+            }
+
+            if (isset($_POST['action']) && $_POST['action'] == 'editpost') {
+                $transliteration = sanitize_text_field($_POST['wv_translations_transliteration']);
+                $video = esc_url_raw($_POST['wv_translations_video_url']);
+
+                global $wpdb;
+
+                if ($_POST['wv_translations_action'] == 'save') {
+                    if (
+                        get_post_type($post) == PLUGIN_KEY and
+                        $post->post_status != 'trash' and
+                        $post->post_status != 'auto-draft' and
+                        $post->post_status != 'draft' and
+                        $wpdb->get_var($wpdb->prepare("SELECT translation_id FROM $wpdb->translationmeta WHERE translation_id = %d", $post_id)) == null
+                    ) {
+                        $wpdb->insert(
+                            $wpdb->translationmeta,
+                            [
+                                'translation_id'    => $post_id,
+                                'meta_key'  => 'wv_translations_transliteration',
+                                'meta_value'    => $transliteration
+                            ],
+                            [
+                                '%d', '%s', '%s'
+                            ]
+                        );
+                        $wpdb->insert(
+                            $wpdb->translationmeta,
+                            [
+                                'translation_id'    => $post_id,
+                                'meta_key'  => 'wv_translations_video_url',
+                                'meta_value'    => $video
+                            ],
+                            [
+                                '%d', '%s', '%s'
+                            ]
+                        );
+                    }
+                } else {
+                    if (get_post_type($post) == 'mv-translations') {
+                        $wpdb->update(
+                            $wpdb->translationmeta,
+                            array(
+                                'meta_value'    => $transliteration
+                            ),
+                            array(
+                                'translation_id'    => $post_id,
+                                'meta_key'  => 'wv_translations_transliteration',
+                            ),
+                            array('%s'),
+                            array('%d', '%s')
+                        );
+                        $wpdb->update(
+                            $wpdb->translationmeta,
+                            array(
+                                'meta_value'    => $video
+                            ),
+                            array(
+                                'translation_id'    => $post_id,
+                                'meta_key'  => 'wv_translations_video_url',
+                            ),
+                            array('%s'),
+                            array('%d', '%s')
+                        );
+                    }
                 }
             }
         }
